@@ -1,4 +1,4 @@
-# Facilia_PPK-Project
+# Facilia PPK Project
 Sistem reservasi dan pelaporan kerusakan fasilitas kampus untuk Project Pengembangan Platform Khusus (PPK) 2026, Kelompok 11 Kelas D.
 
 FACILIA menggabungkan tiga modul dalam satu aplikasi PHP dengan pola MVC: autentikasi dan administrasi, layanan publik dan reservasi, serta laporan kerusakan dan layanan petugas.
