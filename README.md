@@ -1,141 +1,153 @@
-# Pembaruan terakhir
-- Persetujuan memeriksa status ACTIVE di bawah kunci transaksi dan tenggat tanggal.
-- Slot maintenance ditandai tidak tersedia.
-- Foto laporan wajib di browser dan server.
-- Auto-cancel CLI dan pemasang jadwal Windows tersedia.
+# Facilia_PPK-Project
+Sistem reservasi dan pelaporan kerusakan fasilitas kampus untuk Project Pengembangan Platform Khusus (PPK) 2026, Kelompok 11 Kelas D.
 
-## Pasang auto-cancel tanpa kunjungan
-Setelah menyalin proyek ke htdocs, buka PowerShell di folder proyek, lalu jalankan:
+FACILIA menggabungkan tiga modul dalam satu aplikasi PHP dengan pola MVC: autentikasi dan administrasi, layanan publik dan reservasi, serta laporan kerusakan dan layanan petugas.
+
+## Anggota dan kontribusi
+
+| Anggota | NIM | Kontribusi |
+| --- | --- | --- |
+| Andiny Khaerany Suhartady | 24060124140194 | Modul Laporan & Petugas; desain antarmuka dan CSS |
+| Cindy Kurniawan | 24060124140201 | Modul Publik & Reservasi |
+| Mischa Nathanael Lumban Tobing | 24060124140175 | Modul Auth & Admin; integrasi ketiga modul |
+
+## Teknologi
+
+- PHP 8+, PDO, dan MySQL/MariaDB.
+- HTML, CSS, dan JavaScript.
+- Apache dengan mod_rewrite; dapat dijalankan melalui XAMPP.
+- Struktur MVC sederhana, tanpa Laravel dan tanpa kebutuhan Composer.
+
+## Fitur
+
+### Pengunjung dan pengguna
+
+- Daftar dan pencarian fasilitas berdasarkan nama/lokasi, tipe, serta kapasitas minimum.
+- Detail fasilitas dan ketersediaan per slot 30 menit, tanpa menampilkan identitas pemohon kepada pengunjung.
+- Registrasi mandiri dengan verifikasi admin sebelum login.
+- Pengajuan reservasi dengan tujuan penggunaan wajib diisi.
+- Riwayat dan detail reservasi milik sendiri.
+- Pembatalan reservasi milik sendiri melalui modal konfirmasi dua tahap.
+- Laporan kerusakan dengan kategori, deskripsi, dan foto wajib.
+- Pemantauan status laporan beserta catatan petugas.
+
+### Petugas
+
+- Dashboard dan antrean reservasi serta laporan.
+- Persetujuan atau penolakan reservasi dengan pemeriksaan ulang status fasilitas dan bentrok jadwal.
+- Pembatalan darurat reservasi yang sudah disetujui dengan alasan.
+- Pemrosesan laporan dan catatan penyelesaian.
+- Perubahan status fasilitas antara ACTIVE dan MAINTENANCE.
+
+### Admin
+
+- Pembuatan akun pengguna/petugas dan verifikasi registrasi mandiri.
+- Pencarian serta penghapusan akun sesuai pembatasan riwayat transaksi.
+- Penambahan, pengubahan, dan penonaktifan fasilitas.
+- Rekap okupansi dan kerusakan berdasarkan periode, serta ekspor CSV dan Excel (XLSX).
+
+## Aturan reservasi
+
+- Jam operasional: **07.00–20.00 WIB**, dengan kelipatan **30 menit**.
+- Reservasi minimal **H-1**; pemesanan untuk hari yang sama tidak diperbolehkan.
+- Fasilitas hanya dapat dipesan saat berstatus **ACTIVE**.
+- Reservasi yang sudah disetujui tidak boleh bertabrakan pada fasilitas yang sama.
+- Pemilik hanya dapat membatalkan reservasi **PENDING/APPROVED sebelum tanggal dan jam mulai**.
+- Reservasi PENDING yang belum disetujui ketika tanggal penggunaannya tiba dibatalkan otomatis.
+- Zona waktu aplikasi: **Asia/Jakarta**.
+
+## Struktur proyek
+
+| Folder/file | Fungsi |
+| --- | --- |
+| app/controllers/ | Logika permintaan dan proses aplikasi |
+| app/models/ | Akses data dan aturan model |
+| app/middleware/ | Pembatasan akses berdasarkan autentikasi dan peran |
+| app/helpers/ | Validasi, slot waktu, unggahan, dan ekspor |
+| config/ | Konfigurasi aplikasi dan koneksi database |
+| database/ | Skema SQL, seed akun/data demo, dan migrasi |
+| public/ | Entry point, aset CSS/JavaScript, dan unggahan |
+| routes/ | Pemetaan rute aplikasi |
+| views/ | Tampilan publik, pengguna, petugas, dan admin |
+| scripts/ | Auto-cancel melalui CLI dan pemasang jadwal opsional |
+
+## Menjalankan dengan XAMPP
+
+1. Ekstrak atau salin proyek ke **C:\xampp\htdocs\facilia-FinalPPK**. Pastikan folder app, config, database, public, dan views langsung berada di dalamnya.
+2. Jalankan **Apache** dan **MySQL** pada XAMPP Control Panel.
+3. Buka **http://localhost/phpmyadmin**. Untuk instalasi baru, impor **database/schema.sql**, kemudian **database/seed.sql**.
+4. Periksa **config/database.php**. Konfigurasi bawaan menggunakan host localhost, database facilia, pengguna root, dan kata sandi kosong. Sesuaikan dengan MySQL lokal jika berbeda.
+5. Pastikan ekstensi PHP **pdo_mysql** dan **fileinfo**, serta Apache **mod_rewrite**, aktif.
+6. Pastikan **public/uploads/reports/** dapat ditulis oleh Apache.
+7. Buka **http://localhost/facilia-FinalPPK/public/login**.
+
+Daftar fasilitas publik dapat dibuka melalui **http://localhost/facilia-FinalPPK/public/facilities**. Base URL terdeteksi dari lokasi folder; jika nama folder berubah, sesuaikan URL di browser.
+
+### Database versi lama
+
+Jika database sebelumnya belum memiliki kolom cancelled_at, jalankan **database/migration_01_add_cancelled_at.sql** satu kali. Jangan mengimpor ulang seed pada database berisi data kerja tanpa memeriksa isinya terlebih dahulu.
+
+## Akun demo
+
+Semua akun demo menggunakan kata sandi **password123**.
+
+| Peran | Email | Status awal dari seed |
+| --- | --- | --- |
+| Admin | admin@facilia.test | VERIFIED |
+| Petugas | petugas@facilia.test | VERIFIED |
+| Pengguna | user1@facilia.test | VERIFIED |
+| Pengguna tambahan | user2@facilia.test | PENDING; perlu verifikasi admin sebelum login |
+
+Akun dan kata sandi ini disediakan untuk demonstrasi lokal.
+
+## Auto-cancel
+
+Pemeriksaan reservasi PENDING yang kedaluwarsa berjalan ketika aplikasi menerima permintaan. Agar pemeriksaan juga berjalan tanpa kunjungan, tersedia **jadwal Windows opsional**.
+
+Jalankan manual dari PowerShell:
+
 ```powershell
+cd C:\xampp\htdocs\facilia-FinalPPK
+C:\xampp\php\php.exe .\scripts\auto-cancel.php
+```
+
+Pasang jadwal:
+
+```powershell
+cd C:\xampp\htdocs\facilia-FinalPPK
 powershell -ExecutionPolicy Bypass -File .\scripts\pasang-jadwal.ps1
 ```
-Jadwal dibuat pada 00.00 waktu Windows. Atur zona waktu Windows ke WIB; PHP memakai Asia/Jakarta. Komputer dan MySQL harus aktif. Jadwal ini menggunakan akun Windows yang sedang masuk; komputer mati/logout tidak menjamin eksekusi tepat tengah malam. StartWhenAvailable dan pemeriksaan setiap request tetap menangani eksekusi yang terlewat. Script belum memasang jadwal di komputer kamu sampai perintah tersebut dijalankan.
-Uji manual: `C:\xampp\php\php.exe scripts\auto-cancel.php`.
-Kelengkapan laporan/repository: lihat PENGUMPULAN.md.
 
-## Perbaikan US3, US4, US5, US17 — 10 Oktober 2026
+Jadwal menggunakan pukul 00.00 menurut waktu Windows. Gunakan zona waktu WIB; komputer dan MySQL harus aktif. Penjadwalan ini tidak wajib untuk menjalankan aplikasi, dan komputer mati atau akun logout tidak menjamin eksekusi tepat tengah malam.
 
-- US3: tujuan penggunaan wajib diisi, maksimal 255 karakter/byte pada validasi server.
-- US4: pemilik hanya dapat membatalkan PENDING/APPROVED sebelum tanggal dan jam mulai (WIB). Batas diperiksa di controller, tampilan, dan query UPDATE atomik. Contoh: booking 12 Oktober 07:00 tidak dapat dibatalkan pada 12 Oktober 07:00 atau sesudahnya.
-- US5: detail milik sendiri tersedia di `/reservation/detail?id=...`, mencakup fasilitas/lokasi, pemohon, tujuan, waktu, status, alasan dan waktu pembatalan. Akun lain menerima 404.
-- US17: rekap berdasarkan periode inklusif; jam terpakai dari durasi APPROVED. Persentase = jam terpakai / (jumlah hari x 13 jam) x 100. Default periode adalah bulan berjalan. Penyebut belum mengurangi maintenance/nonaktif karena schema tidak menyimpan riwayat status fasilitas.
-- Rekap dan ekspor kerusakan menyertakan lokasi; tersedia XLSX asli dan CSV UTF-8 (BOM, sep=;, pemisah titik koma). Tidak membutuhkan Composer atau ekstensi ZipArchive.
-- Pengajuan/pembatalan pengguna menggunakan modal dua tahap di tengah layar.
-- Tidak ada perubahan struktur database untuk empat perbaikan ini. Gunakan database yang sama; jika database versi lama belum mempunyai cancelled_at, jalankan migrasi yang telah disediakan sebelumnya.
-- Folder paket ini bernama `facilia-penyempurnaan34517`, URL `/facilia-penyempurnaan34517/public/login`.
+Untuk menghapus jadwal pada folder bernama facilia-FinalPPK:
 
-# FACILIA — Sistem Reservasi & Pelaporan Fasilitas Kampus
+```powershell
+Unregister-ScheduledTask -TaskName "FACILIA-AutoCancel-facilia-FinalPPK" -Confirm:$false
+```
 
-## Revisi hasil evaluasi 25 September 2026
+## Rekap okupansi
 
-- Pengajuan, persetujuan, penolakan, dan pembatalan reservasi memakai konfirmasi ganda.
-- Pembatalan reservasi memakai modal dua tahap di tengah layar yang konsisten dengan UI FACILIA.
-- Penanda konfirmasi turut diverifikasi di server; request tanpa konfirmasi ditolak.
-- Reservasi hanya dapat dibuat minimal H-1.
-- Reservasi `PENDING` otomatis menjadi `CANCELLED` ketika tanggal reservasi tiba, dengan alasan otomatis tersimpan di riwayat.
-- Perhitungan tanggal aplikasi menggunakan zona waktu `Asia/Jakarta`.
+Jam terpakai dihitung dari durasi reservasi APPROVED dalam periode yang dipilih. Persentase okupansi dihitung sebagai:
 
-Aplikasi lengkap **Modul 1 (Auth & Admin) + Modul 2 (Publik & Reservasi) + Modul 3 (Report & Petugas)**,
-digabung jadi satu codebase PHP-MVC ringan (bukan Laravel penuh) dengan satu router (`routes/web.php`)
-dan satu design system bersama (`public/assets/css/style.css`) untuk seluruh halaman.
+**jam terpakai / (jumlah hari dalam periode × 13 jam operasional) × 100%**
 
-Modul 3 diintegrasikan dari implementasi tim yang sudah jadi (`Modul_3.zip`), disesuaikan ke struktur/konvensi
-Modul 1 & 2 (session key, model `getDB()`, helper `redirect()`/`setFlash()`) dan UI-nya dijadikan acuan
-untuk restyle Modul 1 & 2 — jadi seluruh aplikasi sekarang tampil dengan satu tampilan yang konsisten.
+Periode bersifat inklusif. Penyebut belum mengurangi durasi maintenance/nonaktif karena database belum menyimpan riwayat perubahan status fasilitas. Rekap kerusakan menyertakan fasilitas dan lokasi; ekspor tersedia dalam CSV UTF-8 dan XLSX.
 
-Seluruh alur di bawah **sudah diuji langsung** (bukan cuma dibaca kodenya) dengan MySQL + PHP built-in
-server di lingkungan sandbox: register→verifikasi, login 3 role, browse & search fasilitas, submit
-reservasi rentang jam bebas, validasi overlap, approve/reject petugas, buat laporan, proses laporan
-sampai fasilitas otomatis ACTIVE⇄MAINTENANCE. Satu bug nyata ditemukan dan diperbaiki dalam proses ini
-(lihat "Bug yang ditemukan & diperbaiki" di bawah).
+## Pengujian sebelum demo
 
-## Struktur & alur lengkap
+- Registrasi pengguna baru, verifikasi oleh admin, lalu login/logout.
+- Cari fasilitas dan periksa slot ACTIVE serta MAINTENANCE.
+- Ajukan reservasi untuk besok; uji tujuan kosong, waktu tidak valid, serta pemesanan hari yang sama.
+- Setujui reservasi melalui petugas dan periksa penolakan jadwal yang bentrok.
+- Periksa detail reservasi, dua tahap modal pembatalan, dan batas waktu pembatalan.
+- Buat laporan dengan foto, proses melalui petugas, lalu periksa status serta catatan pada akun pengguna.
+- Periksa rekap dan buka hasil ekspor XLSX/CSV.
 
-**Auth & Role Security (Modul 1)**
-- Register mandiri → PENDING → perlu approve admin sebelum bisa login
-- Password `password_hash()`/`password_verify()`, session `user_id`/`role`/`name`
-- Middleware `AuthMiddleware`, `AdminMiddleware`, `PetugasMiddleware` (cek server-side)
+Daftar ini merupakan panduan pengujian, bukan klaim bahwa seluruh skenario sudah lulus pada setiap instalasi.
 
-**Admin (Modul 1)**
-- Kelola user (approve/reject/buat akun langsung), CRUD fasilitas (nonaktifkan = `INACTIVE`, tidak pernah `DELETE`)
-- Analytics occupancy (reservasi APPROVED) + frekuensi kerusakan per fasilitas/kategori, export CSV
+## Repository
 
-**Publik & Reservasi (Modul 2)**
-- Browse fasilitas ACTIVE/MAINTENANCE dengan search & filter
-- Detail fasilitas + grid availability visual per 30 menit
-- **Reservasi rentang jam bebas**: user memilih jam mulai & jam selesai sendiri (kelipatan 30 menit,
-  07:00–20:00), bukan centang slot satu-satu — satu reservasi bisa langsung mencakup beberapa jam
-  (`app/helpers/slots.php` + `Reservation::hasApprovedOverlap()`)
-- Riwayat reservasi + cancel oleh pemilik
+https://github.com/AndinySuhartady/Facilia_PPK-Project
 
-**Report & Petugas (Modul 3)**
-- User (role USER) membuat laporan kerusakan: pilih fasilitas ACTIVE, kategori (whitelist), deskripsi,
-  foto opsional (JPG/PNG/WEBP, maks 2MB, nama file di-randomize)
-- "Laporan Saya" — riwayat & detail, dibatasi hanya milik sendiri
-- Panel Petugas (khusus role PETUGAS — ADMIN dan USER mendapat 403 sesuai aturan akses terpisah):
-  - **Antrean reservasi**: approve (dengan re-check overlap terhadap APPROVED lain tepat sebelum commit,
-    sehingga dua reservasi identik yang diproses hampir bersamaan tidak bisa dua-duanya disetujui) /
-    reject (wajib isi alasan) / emergency-cancel reservasi APPROVED (mis. fasilitas mendadak rusak)
-  - **Antrean laporan**: BARU → DIPROSES → SELESAI/DITOLAK (`Report::ALLOWED_TRANSITIONS` sebagai
-    satu-satunya sumber kebenaran transisi yang sah), dengan catatan wajib untuk status akhir
-  - Toggle status fasilitas ACTIVE ⇄ MAINTENANCE dari halaman detail laporan, atomik terhadap status
-    fasilitas saat itu (`Facility::updateOperationalStatus()`) — fasilitas MAINTENANCE otomatis tidak
-    bisa direservasi (dicek ulang di `ReservationController::store()`)
-  - Semua aksi kritikal (approve/reject/cancel/ubah status) dilindungi CSRF token
-
-## Update setelah laporan bug & permintaan fitur dari lapangan
-
-**Bug fatal error saat cancel reservasi (SUDAH DIPERBAIKI)**
-Kalau database Anda sudah terlanjur dibuat dari `schema.sql` versi sebelum `cancelled_at`
-ditambahkan, jalankan `database/migration_01_add_cancelled_at.sql` SEKALI di phpMyAdmin
-(tab SQL). Sudah diuji ulang — emergency-cancel oleh petugas berjalan normal setelah migrasi.
-
-**Fitur baru — Admin**
-- Hapus user permanen (`/admin/users/delete`), khusus status VERIFIED/REJECTED. Diblokir otomatis
-  jika: user masih PENDING (harus di-approve/reject dulu), mencoba hapus akun sendiri, atau user
-  masih punya riwayat reservasi/laporan (data historis tidak boleh hilang)
-- Search user by nama/email (`?q=...`) di halaman `/admin/users`, bisa dikombinasi dengan filter status
-
-**Fitur baru — Publik**
-- Fasilitas berstatus INACTIVE sekarang tetap muncul di `/facilities` (dengan label "nonaktif"),
-  tapi tombol detail disembunyikan dan akses langsung ke `/facility/detail?id=..` diblokir
-  (`views/public/facility-inactive.php`) — sebelumnya fasilitas INACTIVE hilang total dari listing
-
-## Bug yang ditemukan & diperbaiki saat integrasi
-- `mb_strlen()` dipakai di validasi `ReportController`/`PetugasController` menyebabkan **Fatal Error**
-  di lingkungan tanpa extension `mbstring` aktif. Diganti ke `strlen()` (tidak butuh extension tambahan,
-  cukup untuk sekadar batas panjang teks). Sudah diuji ulang dan submit laporan berjalan normal.
-- Versi asli `PetugasMiddleware` (dari `Modul_3.zip`) memakai session key `user_role`, sedangkan
-  `ReportController`-nya memakai `role` — tidak konsisten satu sama lain. Disatukan ke `role` mengikuti
-  konvensi `AuthController` Modul 1 di seluruh codebase gabungan ini.
-
-## Setup lokal (XAMPP)
-
-0. Butuh **PHP 8.1+** (memakai `match`, `str_starts_with`, dan parameter `eol` pada `fputcsv`).
-1. Salin folder proyek (mis. `facilia-FinalPPK/`) ke `htdocs/`.
-2. Buka phpMyAdmin, jalankan `database/schema.sql` lalu `database/seed.sql`.
-2b. Jika memakai database lama, jalankan juga `database/migration_02_notifications_and_lengths.sql` (tabel notifikasi).
-3. Cek kredensial di `config/database.php` (default: `root` tanpa password, nama DB `facilia`).
-4. Sesuaikan `BASE_URL` di `config/app.php` dengan path akses lokal Anda, mis. `/facilia/public`.
-5. Pastikan `mod_rewrite` Apache aktif (dipakai `.htaccess` di folder `public/`).
-6. Pastikan extension `pdo_mysql` dan `fileinfo` aktif di `php.ini` (default aktif di XAMPP).
-7. Akses `http://localhost/<nama-folder-proyek>/public/login`.
-
-**Akun demo** (password semua: `password123`):
-| Role    | Email                  |
-|---------|------------------------|
-| ADMIN   | admin@facilia.test     |
-| PETUGAS | petugas@facilia.test   |
-| USER (verified) | user1@facilia.test |
-| USER (pending)  | user2@facilia.test |
-
-## Kontrak penting (jangan diubah sepihak tanpa koordinasi tim)
-- Session key: `user_id`, `role`, `name` — dipakai di seluruh middleware & controller
-- Nama field/enum status: lihat `database/schema.sql`
-- Transisi status laporan: `Report::ALLOWED_TRANSITIONS` di `app/models/Report.php`
-- Transisi status fasilitas: `Facility::updateOperationalStatus()` di `app/models/Facility.php`
-- Design system: `public/assets/css/style.css` — semua view (Modul 1/2/3) memakai file ini,
-  jangan menyisipkan `<style>` inline baru di view agar tampilan tetap konsisten
-
-## Patch bug & fitur (12 Oktober 2026)
-Lihat `CHANGELOG_PATCH.md` untuk daftar lengkap perbaikan, fitur baru, dan hal yang sengaja belum diubah.
+Setiap anggota melakukan commit kontribusinya sendiri dengan pesan yang menjelaskan perubahan. Laporan PDF, SQL, source code, serta petunjuk instalasi disertakan sesuai ketentuan pengumpulan mata kuliah.
