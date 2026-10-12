@@ -41,15 +41,27 @@ class User
         return (int) getDB()->lastInsertId();
     }
 
-    /** Daftar user dengan filter opsional verification_status, untuk admin. */
-    public static function all(?string $verificationStatus = null): array
+    /** Daftar user dengan filter opsional verification_status + search nama/email, untuk admin. */
+    public static function all(?string $verificationStatus = null, ?string $keyword = null): array
     {
+        $sql = 'SELECT * FROM users WHERE 1=1';
+        $params = [];
+
         if ($verificationStatus) {
-            $stmt = getDB()->prepare('SELECT * FROM users WHERE verification_status = ? ORDER BY created_at DESC');
-            $stmt->execute([$verificationStatus]);
-        } else {
-            $stmt = getDB()->query('SELECT * FROM users ORDER BY created_at DESC');
+            $sql .= ' AND verification_status = ?';
+            $params[] = $verificationStatus;
         }
+        if ($keyword) {
+            $sql .= ' AND (name LIKE ? OR email LIKE ?)';
+            $like = '%' . $keyword . '%';
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $sql .= ' ORDER BY created_at DESC';
+
+        $stmt = getDB()->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
@@ -59,10 +71,53 @@ class User
         $stmt->execute([$status, $id]);
     }
 
+    public static function updateRole(int $id, string $role): void
+    {
+        $stmt = getDB()->prepare('UPDATE users SET role = ? WHERE id = ?');
+        $stmt->execute([$role, $id]);
+    }
+
+    public static function updatePassword(int $id, string $hashedPassword): void
+    {
+        $stmt = getDB()->prepare('UPDATE users SET password = ? WHERE id = ?');
+        $stmt->execute([$hashedPassword, $id]);
+    }
+
+    /** Statistik ringan untuk dashboard (menggantikan count(User::all())). */
+    public static function countAll(?string $verificationStatus = null): int
+    {
+        if ($verificationStatus) {
+            $stmt = getDB()->prepare('SELECT COUNT(*) AS total FROM users WHERE verification_status = ?');
+            $stmt->execute([$verificationStatus]);
+        } else {
+            $stmt = getDB()->query('SELECT COUNT(*) AS total FROM users');
+        }
+        return (int) $stmt->fetch()['total'];
+    }
+
     public static function countByRole(string $role): int
     {
         $stmt = getDB()->prepare('SELECT COUNT(*) AS total FROM users WHERE role = ?');
         $stmt->execute([$role]);
         return (int) $stmt->fetch()['total'];
+    }
+
+    /** Cek apakah user masih punya riwayat reservasi/laporan (mencegah hapus data historis). */
+    public static function isReferenced(int $id): bool
+    {
+        $stmt = getDB()->prepare(
+            'SELECT
+                (SELECT COUNT(*) FROM reservations WHERE user_id = ?) +
+                (SELECT COUNT(*) FROM reports WHERE user_id = ?) AS total'
+        );
+        $stmt->execute([$id, $id]);
+        return (int) $stmt->fetch()['total'] > 0;
+    }
+
+    /** Hapus user permanen. Hanya dipanggil setelah lolos semua pengecekan di controller. */
+    public static function delete(int $id): void
+    {
+        $stmt = getDB()->prepare('DELETE FROM users WHERE id = ?');
+        $stmt->execute([$id]);
     }
 }

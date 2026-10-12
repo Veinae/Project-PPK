@@ -31,7 +31,11 @@
             <p style="color:#6b7280;font-size:0.88rem;margin:10px 0;">
                 <?= htmlspecialchars($f['type']) ?> · <?= htmlspecialchars($f['location']) ?> · Kapasitas <?= (int) $f['capacity'] ?>
             </p>
-            <a class="btn" href="<?= BASE_URL ?>/facility/detail?id=<?= $f['id'] ?>">Lihat Detail & Availability</a>
+            <?php if ($f['status'] === 'INACTIVE'): ?>
+                <span class="muted">Fasilitas nonaktif — detail tidak tersedia</span>
+            <?php else: ?>
+                <a class="btn" href="<?= BASE_URL ?>/facility/detail?id=<?= $f['id'] ?>">Lihat Detail & Availability</a>
+            <?php endif; ?>
         </div>
     <?php endforeach; ?>
     <?php if (empty($facilities)): ?>

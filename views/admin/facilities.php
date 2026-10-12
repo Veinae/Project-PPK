@@ -22,6 +22,7 @@
                         <form method="POST" action="<?= BASE_URL ?>/admin/facilities/deactivate" style="display:inline"
                               onsubmit="return confirm('Nonaktifkan fasilitas ini?');">
                             <input type="hidden" name="id" value="<?= $f['id'] ?>">
+                            <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
                             <button type="submit" class="btn-danger">Nonaktifkan</button>
                         </form>
                     <?php endif; ?>

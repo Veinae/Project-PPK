@@ -16,13 +16,13 @@
         <input type="hidden" name="id" value="<?= $facility['id'] ?>">
         <div class="form-group">
             <label>Tanggal</label>
-            <input type="date" name="date" value="<?= htmlspecialchars($date) ?>" min="<?= date('Y-m-d') ?>">
+            <input type="date" name="date" value="<?= htmlspecialchars($date) ?>" min="<?= htmlspecialchars($minimumReservationDate) ?>" max="<?= htmlspecialchars($maximumReservationDate) ?>">
         </div>
         <button type="submit">Lihat</button>
     </form>
 
     <p style="font-size:0.85rem;color:#6b7280;">
-        Kotak hijau = tersedia, kotak merah = sudah dipesan (APPROVED) pada <?= htmlspecialchars($date) ?>.
+        Kotak hijau = tersedia, kotak merah = tidak tersedia (sudah dipesan atau fasilitas dalam perbaikan) pada <?= htmlspecialchars($date) ?>.
         Ini hanya panduan visual — Anda tetap bebas memilih <strong>jam mulai & jam selesai sendiri</strong> di bawah,
         selama tidak menabrak jadwal yang sudah disetujui.
     </p>
@@ -46,16 +46,20 @@
     <div class="card">
         <p>Silakan <a href="<?= BASE_URL ?>/login">login</a> untuk membuat reservasi.</p>
     </div>
-<?php else: ?>
+<?php elseif (currentRole() === 'USER'): ?>
     <div class="card" style="max-width:480px;">
         <h2>Ajukan Reservasi</h2>
         <p style="font-size:0.85rem;color:#6b7280;">
+            Reservasi wajib diajukan minimal H-1 (tidak dapat memesan untuk hari yang sama).<br>
             Pilih rentang jam bebas — mis. 07:00 sampai 09:00 untuk reservasi 2 jam sekaligus.
             Jam hanya boleh kelipatan 30 menit, antara 07:00–20:00.
         </p>
-        <form method="POST" action="<?= BASE_URL ?>/reservation/create">
+        <form method="POST" action="<?= BASE_URL ?>/reservation/create"
+              onsubmit="return confirmReservationAction(this, 'Ajukan reservasi dengan jadwal tersebut?');">
             <input type="hidden" name="facility_id" value="<?= $facility['id'] ?>">
             <input type="hidden" name="reservation_date" value="<?= htmlspecialchars($date) ?>">
+            <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+            <input type="hidden" name="confirmed" value="0">
 
             <div class="form-group">
                 <label>Tanggal reservasi</label>
@@ -82,8 +86,8 @@
             </div>
 
             <div class="form-group">
-                <label>Keperluan (opsional)</label>
-                <textarea name="purpose" rows="2" placeholder="mis. Rapat organisasi mahasiswa"></textarea>
+                <label>Tujuan penggunaan *</label>
+                <textarea name="purpose" rows="2" required maxlength="255" placeholder="mis. Rapat organisasi mahasiswa"></textarea>
             </div>
 
             <button type="submit">Ajukan Reservasi</button>
@@ -115,6 +119,8 @@
             }
         });
     </script>
+<?php else: ?>
+    <div class="card"><p>Hanya akun User yang dapat mengajukan reservasi.</p></div>
 <?php endif; ?>
 
 <?php require __DIR__ . '/../layouts/footer.php'; ?>

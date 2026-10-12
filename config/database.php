@@ -24,11 +24,16 @@ function getDB(): PDO
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES   => false,
+            // Samakan zona waktu sesi MySQL dengan PHP (WIB) agar NOW()/CURDATE() konsisten.
+            PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone = '+07:00'",
         ];
 
         try {
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
         } catch (PDOException $e) {
+            if (PHP_SAPI === 'cli') {
+                throw $e;
+            }
             http_response_code(500);
             die('Koneksi database gagal: ' . $e->getMessage());
         }

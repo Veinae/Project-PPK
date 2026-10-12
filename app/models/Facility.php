@@ -22,9 +22,14 @@ class Facility
      * Browse publik: hanya ACTIVE/MAINTENANCE yang ditampilkan (INACTIVE disembunyikan),
      * dengan search nama/lokasi, filter tipe, dan filter kapasitas minimum.
      */
+    /**
+     * Daftar publik — SEMUA status ditampilkan (termasuk INACTIVE) supaya user tetap
+     * tahu fasilitas itu ada. INACTIVE hanya diblokir dari halaman detail/availability
+     * di FacilityController::show(), bukan disembunyikan dari listing.
+     */
     public static function searchPublic(?string $keyword, ?string $type, ?int $minCapacity): array
     {
-        $sql = "SELECT * FROM facilities WHERE status IN ('ACTIVE', 'MAINTENANCE')";
+        $sql = 'SELECT * FROM facilities WHERE 1=1';
         $params = [];
 
         if ($keyword) {
@@ -81,8 +86,39 @@ class Facility
      */
     public static function deactivate(int $id): void
     {
-        $stmt = getDB()->prepare('UPDATE facilities SET status = \'INACTIVE\' WHERE id = ?');
-        $stmt->execute([$id]);
+        self::setStatus($id, 'INACTIVE');
+    }
+
+    /**
+     * Ubah status fasilitas saja (dipakai Admin, mis. saat deactivate → INACTIVE).
+     */
+    public static function setStatus(int $id, string $status): void
+    {
+        $stmt = getDB()->prepare('UPDATE facilities SET status = ? WHERE id = ?');
+        $stmt->execute([$status, $id]);
+    }
+
+    /**
+     * Transisi status operasional oleh PETUGAS (Modul 3): ACTIVE ⇄ MAINTENANCE.
+     * Atomik — WHERE menyertakan status saat ini, sehingga hanya berhasil
+     * jika belum diubah petugas lain, dan hanya mengizinkan pasangan transisi yang sah.
+     */
+    public static function updateOperationalStatus(int $id, string $currentStatus, string $newStatus): bool
+    {
+        $allowedTransitions = [
+            'ACTIVE' => ['MAINTENANCE'],
+            'MAINTENANCE' => ['ACTIVE'],
+        ];
+
+        if (!in_array($newStatus, $allowedTransitions[$currentStatus] ?? [], true)) {
+            return false;
+        }
+
+        $stmt = getDB()->prepare(
+            'UPDATE facilities SET status = ? WHERE id = ? AND status = ?'
+        );
+        $stmt->execute([$newStatus, $id, $currentStatus]);
+        return $stmt->rowCount() > 0;
     }
 
     public static function isReferenced(int $id): bool

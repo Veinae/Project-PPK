@@ -1,0 +1,7 @@
+/public/uploads/reports/*
+!/public/uploads/reports/.gitkeep
+!/public/uploads/reports/.htaccess
+.env
+*.log
+*.lnk
+.DS_Store
